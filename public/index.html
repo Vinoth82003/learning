@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>User Data Collection</title>
+  </head>
+  <body>
+    <h1>Capture User Data</h1>
+    <div id="user-info">
+      <p>IP Address: <span id="ip"></span></p>
+      <p>Location: <span id="location"></span></p>
+    </div>
+    <div id="camera">
+      <input type="file" id="fileInput" accept="image/*" capture="user">
+      <img id="preview" style="display:none;" width="640" height="480" />
+      <button id="upload" style="display:none;">Upload Photo</button>
+    </div>
+    <script>
+      // Get user IP and location
+      fetch("/api/location")
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.ip) {
+            document.getElementById("ip").textContent = data.ip;
+          }
+          if (data.city && data.region && data.country) {
+            document.getElementById("location").textContent = `${data.city}, ${data.region}, ${data.country}`;
+          } else {
+            document.getElementById("location").textContent = "Location data not available.";
+          }
+        })
+        .catch((error) => console.error("Error:", error));
+
+      const fileInput = document.getElementById("fileInput");
+      const preview = document.getElementById("preview");
+      const uploadButton = document.getElementById("upload");
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            preview.src = e.target.result;
+            preview.style.display = "block";
+            uploadButton.style.display = "block";
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      uploadButton.addEventListener("click", () => {
+        const file = fileInput.files[0];
+        if (file) {
+          const formData = new FormData();
+          formData.append("selfie", file);
+          fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("File uploaded successfully:", data.filePath);
+            })
+            .catch((error) => console.error("Error uploading file:", error));
+        }
+      });
+    </script>
+  </body>
+</html>
