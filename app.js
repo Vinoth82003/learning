@@ -65,7 +65,9 @@ app.get("/view", (req, res) => {
       </head>
       <body>
         <h1>Uploaded Images</h1>
-        ${images}
+        <div class="display_images">
+          ${images}
+        </div>
       </body>
       </html>
     `);
